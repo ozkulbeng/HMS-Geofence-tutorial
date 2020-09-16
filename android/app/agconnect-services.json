@@ -1,0 +1,30 @@
+{
+	"agcgw":{
+		"backurl":"connect-dre.dbankcloud.cn",
+		"url":"connect-dre.hispace.hicloud.com"
+	},
+	"client":{
+		"cp_id":"5190090000026272220",
+		"product_id":"736430079244608254",
+		"client_id":"433896152304190592",
+		"client_secret":"82E32F98C62C09D9CE5CD1CCAB05559FE476AAE02BAD87E0CA9E2F84CC6000D4",
+		"app_id":"102772043",
+		"package_name":"com.example.geofence_example",
+		"api_key":"CgB6e3x9+KNcVqW5vYjVNmG8CQN8lzm/HHhe9nUVMNOzRPOPjCFouQAwbcLvhp0vgmo2XywQgAvlvj+FFWdUdBPr"
+	},
+	"service":{
+		"analytics":{
+			"collector_url":"datacollector-dre.dt.hicloud.com,datacollector-dre.dt.dbankcloud.cn",
+			"resource_id":"p1",
+			"channel_id":""
+		},
+		"cloudstorage":{
+			"storage_url":"https://ops-dre.agcstorage.link"
+		},
+		"ml":{
+			"mlservice_url":"ml-api-dre.ai.dbankcloud.com,ml-api-dre.ai.dbankcloud.cn"
+		}
+	},
+	"region":"DE",
+	"configuration_version":"1.0"
+}
