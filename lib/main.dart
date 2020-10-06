@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:geofence_example/home.dart';
-import 'package:huawei_location/permission/permission_handler.dart';
 import 'package:huawei_map/map.dart';
 
 void main() {
