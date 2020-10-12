@@ -81,13 +81,20 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
+  grouped_buttons:
+    dependency: "direct main"
+    description:
+      name: grouped_buttons
+      url: "https://pub.dartlang.org"
+    source: hosted
+    version: "1.0.4"
   huawei_location:
     dependency: "direct main"
     description:
       name: huawei_location
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.4+300"
+    version: "5.0.0+301"
   huawei_map:
     dependency: "direct main"
     description:
@@ -101,7 +108,7 @@ packages:
       name: huawei_site
       url: "https://pub.dartlang.org"
     source: hosted
-    version: "4.0.4"
+    version: "5.0.1+300"
   image:
     dependency: transitive
     description:
@@ -221,4 +228,4 @@ packages:
     version: "3.6.1"
 sdks:
   dart: ">=2.7.0 <3.0.0"
-  flutter: ">=1.12.13 <2.0.0"
+  flutter: ">=1.12.13+hotfix.6 <2.0.0"
