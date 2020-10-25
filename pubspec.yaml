@@ -17,7 +17,6 @@ dependencies:
   huawei_location: ^5.0.0+301
   huawei_site: ^5.0.1+300
   huawei_map: ^4.0.4+300
-  grouped_buttons: ^1.0.4
 
 
 dev_dependencies:

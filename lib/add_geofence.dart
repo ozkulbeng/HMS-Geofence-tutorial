@@ -1,60 +1,140 @@
-import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:grouped_buttons/grouped_buttons.dart';
+import 'package:geofence_example/global.dart';
 import 'package:huawei_location/geofence/geofence.dart';
+import 'package:huawei_location/geofence/geofence_service.dart';
+import 'package:huawei_site/model/site.dart';
+import 'package:huawei_site/search_service.dart';
+
+
 
 class AddGeofenceScreen extends StatefulWidget {
+  final Geofence geofence;
+  final Site site;
+
+  const AddGeofenceScreen({Key key, this.geofence, this.site})
+      : super(key: key);
+
   @override
   _AddGeofenceScreenState createState() => _AddGeofenceScreenState();
 }
 
 class _AddGeofenceScreenState extends State<AddGeofenceScreen> {
-  bool checked = false;
-  List<String> _checked = [];
+  GeofenceService geofenceService;
+  int selectedConType = Geofence.GEOFENCE_NEVER_EXPIRE;
+  SearchService searchService;
+
+  @override
+  void initState() {
+    geofenceService = GeofenceService();
+    searchService = SearchService();
+    super.initState();
+  }
+
+  void addGeofence(Geofence geofence) {
+    geofence.dwellDelayTime = 10000;
+    geofence.notificationInterval = 100;
+    geofenceList.add(geofence);
+    print(geofenceList);
+  }
 
   @override
   Widget build(BuildContext context) {
-    final boldStyle = TextStyle(fontWeight: FontWeight.bold);
+    Geofence geofence = widget.geofence;
+    Site site = widget.site;
+    final boldStyle = TextStyle(fontWeight: FontWeight.bold, fontSize: 16);
 
-    List<String> conType = ["Enter", "Exit", "Stay", "Never Expire"];
     return Container(
-      //padding: EdgeInsets.all(20),
+      padding: EdgeInsets.fromLTRB(20, 20, 20, 0),
       color: Colors.white,
       height: 400,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: <Widget>[
-          Text(
-            "38A 36. Sokak",
-            style: boldStyle,
-          ),
-          Text("Address: 38A, 36. Sokak\nBornova, İzmir, 35040\nTürkiye"),
-          Text("Radius: 30"),
-          Text(
-            "Select Conversion Type",
-            style: boldStyle,
-          ),
-          CheckboxGroup(
-            labels: conType,
-            checked: _checked,
-            onChange: (bool isChecked, String label, int index) =>
-                print("isChecked: $isChecked   label: $label  index: $index"),
-            onSelected: (List selected) => setState(() {
-              if (selected.length > 1) {
-                selected.removeAt(0);
-                print('selected length  ${selected.length}');
-              } else {
-                print("only one");
-              }
-              _checked = selected;
-            }),
-          ),
-          FlatButton(
-            child: Text("Add"),
-            onPressed: () {},
-          )
-        ],
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: <Widget>[
+            Text(
+              "Address",
+              style: boldStyle,
+            ),
+            Text(site.formatAddress),
+            Text(
+              "\nRadius",
+              style: boldStyle,
+            ),
+            Text(geofence.radius.toInt().toString()),
+            Text(
+              "\nSelect Conversion Type",
+              style: boldStyle,
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: <Widget>[
+                RadioListTile<int>(
+                  dense: true,
+                  title: Text(
+                    "Enter",
+                    style: TextStyle(fontSize: 14),
+                  ),
+                  value: Geofence.ENTER_GEOFENCE_CONVERSION,
+                  groupValue: selectedConType,
+                  onChanged: (int value) {
+                    setState(() {
+                      selectedConType = value;
+                    });
+                  },
+                ),
+                RadioListTile<int>(
+                  dense: true,
+                  title: Text("Exit"),
+                  value: Geofence.EXIT_GEOFENCE_CONVERSION,
+                  groupValue: selectedConType,
+                  onChanged: (int value) {
+                    setState(() {
+                      selectedConType = value;
+                    });
+                  },
+                ),
+                RadioListTile<int>(
+                  dense: true,
+                  title: Text("Stay"),
+                  value: Geofence.DWELL_GEOFENCE_CONVERSION,
+                  groupValue: selectedConType,
+                  onChanged: (int value) {
+                    setState(() {
+                      selectedConType = value;
+                    });
+                  },
+                ),
+                RadioListTile<int>(
+                  dense: true,
+                  title: Text("Never Expire"),
+                  value: Geofence.GEOFENCE_NEVER_EXPIRE,
+                  groupValue: selectedConType,
+                  onChanged: (int value) {
+                    setState(() {
+                      selectedConType = value;
+                    });
+                  },
+                ),
+              ],
+            ),
+            Align(
+              alignment: Alignment.bottomRight,
+              child: FlatButton(
+                child: Text(
+                  "SAVE",
+                  style: TextStyle(
+                      color: Colors.blue, fontWeight: FontWeight.bold),
+                ),
+                onPressed: () {
+                  geofence.conversions = selectedConType;
+                  addGeofence(geofence);
+                  Navigator.pop(context, false);
+                },
+              ),
+            )
+          ],
+        ),
       ),
     );
   }

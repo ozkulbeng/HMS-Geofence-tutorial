@@ -4,70 +4,76 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geofence_example/add_geofence.dart';
 import 'package:huawei_location/geofence/geofence.dart';
-import 'package:huawei_location/geofence/geofence_service.dart';
 import 'package:huawei_location/location/fused_location_provider_client.dart';
 import 'package:huawei_location/location/location.dart';
 import 'package:huawei_location/permission/permission_handler.dart';
 import 'package:huawei_map/components/latLng.dart';
-import 'package:huawei_map/constants/method.dart';
 import 'package:huawei_map/map.dart';
+import 'package:huawei_map/components/components.dart';
+import 'package:huawei_site/model/coordinate.dart';
+import 'package:huawei_site/model/location_type.dart';
+import 'package:huawei_site/model/nearby_search_request.dart';
+import 'package:huawei_site/model/nearby_search_response.dart';
+import 'package:huawei_site/model/site.dart';
+import 'package:huawei_site/search_service.dart';
+
+import 'nearby_search.dart';
 
 class Home extends StatefulWidget {
   @override
   _HomeState createState() => _HomeState();
 }
 
-class _HomeState extends State<Home> {
+class _HomeState extends State<Home> with ChangeNotifier {
   LatLng center;
   PermissionHandler permissionHandler;
   FusedLocationProviderClient locationService;
   String infoText = "";
-  GeofenceService geofenceService;
+
   HuaweiMapController mapController;
   ScreenCoordinate screenCoordinates;
   LatLng selectedCoordinates;
 
-  static const double _zoom = 18;
+  static const double _zoom = 16;
 
   Marker marker;
   Circle circle;
-  Geofence geofence;
+  Geofence geofence = Geofence();
+  Site site;
 
-  final Set<Marker> _markers = {};
+  Set<Marker> _markers = {};
   int _markerId = 1;
   final Set<Circle> _circles = {};
   int _circleId = 1;
-  final Set<Geofence> _geofences = {};
-  double _radius = 30;
-  bool _clicked = false;
+  int _fenceId = 1;
 
+  double radius = 50;
+  bool clicked = false;
+
+  SearchService searchService;
 
   @override
   void initState() {
+    searchService = SearchService();
     permissionHandler = PermissionHandler();
     locationService = FusedLocationProviderClient();
     getCurrentLatLng();
-    geofenceService = GeofenceService();
     super.initState();
   }
 
-  @override
-  void deactivate() {
-    // TODO: implement deactivate
-    super.deactivate();
+  void updateClicked(bool newValue) {
+    setState(() {
+      clicked = newValue;
+      _circles.clear();
+    });
   }
 
   void getCurrentLatLng() async {
     await requestPermission();
     Location currentLocation = await locationService.getLastLocation();
     LatLng latLng = LatLng(currentLocation.latitude, currentLocation.longitude);
-    print(currentLocation.latitude.toString() +
-        " , " +
-        currentLocation.longitude.toString());
     setState(() {
       center = latLng;
-      print("getcurrentcenter ${center.lat} , ${center.lng}");
-      print("getcurrentlatlng ${latLng.lat} , ${latLng.lng}");
 
       //mapController.animateCamera(CameraUpdate.newCameraPosition(
       //  CameraPosition(target: center, zoom: _zoom)));
@@ -78,6 +84,7 @@ class _HomeState extends State<Home> {
   }
 
   addMarker(LatLng latLng) {
+    radius = 50;
     if (_circles.isNotEmpty) _circles.clear();
 
     if (marker != null) marker = null;
@@ -85,13 +92,10 @@ class _HomeState extends State<Home> {
       markerId: MarkerId(_markerId.toString()),
       position: latLng,
       clickable: true,
-      infoWindow: InfoWindow(
-          title: 'Marker Title $_markerId',
-          onClick: () => print("infoWindow clicked")),
       onClick: () {
         setState(() {
           // _markers.remove(marker); //???
-          _clicked = false;
+          clicked = false;
         });
       },
       icon: BitmapDescriptor.defaultMarker,
@@ -99,6 +103,7 @@ class _HomeState extends State<Home> {
     setState(() {
       _markers.add(marker);
     });
+    selectedCoordinates = latLng;
     _markerId++;
   }
 
@@ -109,7 +114,7 @@ class _HomeState extends State<Home> {
       strokeColor: Colors.red,
       center: latLng,
       clickable: false,
-      radius: _radius,
+      radius: radius,
     );
     setState(() {
       _circles.add(circle);
@@ -121,23 +126,18 @@ class _HomeState extends State<Home> {
     setState(() {
       _markers.clear();
       _circles.clear();
-      _clicked = false;
+      clicked = false;
     });
   }
 
   Future<void> requestPermission() async {
     bool hasPermission = await permissionHandler.hasLocationPermission();
-    print("has permission: $hasPermission");
     if (!hasPermission) {
       try {
         bool status = await permissionHandler.requestLocationPermission();
-        setState(() {
-          infoText = "Is permission granted $status";
-        });
+        print("Is permission granted $status");
       } catch (e) {
-        setState(() {
-          infoText = e.toString();
-        });
+        print(e.toString());
       }
     }
   }
@@ -149,8 +149,6 @@ class _HomeState extends State<Home> {
   _getScreenCoordinates(LatLng latLng) async {
     screenCoordinates = await mapController.getScreenCoordinate(latLng);
     setState(() {});
-    print("SCREEN " + screenCoordinates.x.toString());
-    print("SCREEN " + screenCoordinates.y.toString());
   }
 
   _drawCircle(Geofence geofence) {
@@ -162,9 +160,83 @@ class _HomeState extends State<Home> {
       strokeColor: Colors.red,
       center: selectedCoordinates,
       clickable: false,
-      radius: _radius,
+      radius: radius,
     );
     _circles.add(circle);
+  }
+
+  placeSearch(LatLng latLng) async {
+    NearbySearchRequest request = NearbySearchRequest();
+    request.location = Coordinate(lat: latLng.lat, lng: latLng.lng);
+    request.language = "en";
+    request.poiType = LocationType.ADDRESS;
+    request.pageIndex = 1;
+    request.pageSize = 1;
+    request.radius = 100;
+    NearbySearchResponse response = await searchService.nearbySearch(request);
+    try {
+      print(response.sites);
+      site = response.sites[0];
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  final TextEditingController searchQueryController =
+      TextEditingController(text: "Pharmacy");
+
+  void _showAlertDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text("Search Location"),
+          content: Container(
+            height: 150,
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: <Widget>[
+                TextField(
+                  controller: searchQueryController,
+                ),
+                MaterialButton(
+                  color: Colors.blue,
+                  child: Text(
+                    "Search",
+                    style: TextStyle(color: Colors.white),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(context);
+                    _markers =
+                        await nearbySearch(center, searchQueryController.text);
+                    setState(() {});
+                  },
+                )
+              ],
+            ),
+          ),
+          actions: [
+            FlatButton(
+              child: Text("Close"),
+              onPressed: () {
+                Navigator.pop(context);
+              },
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showToast(BuildContext context) {
+    final scaffold = Scaffold.of(context);
+    scaffold.showSnackBar(
+      SnackBar(
+        content: Text(infoText),
+        action: SnackBarAction(
+            label: 'Close', onPressed: scaffold.hideCurrentSnackBar),
+      ),
+    );
   }
 
   @override
@@ -185,10 +257,11 @@ class _HomeState extends State<Home> {
                       CameraPosition(target: center, zoom: _zoom),
                   mapType: MapType.normal,
                   onClick: (LatLng latLng) {
+                    placeSearch(latLng);
                     selectedCoordinates = latLng;
                     _getScreenCoordinates(latLng);
                     setState(() {
-                      _clicked = true;
+                      clicked = true;
                       addMarker(latLng);
                       addCircle(latLng);
                     });
@@ -204,14 +277,19 @@ class _HomeState extends State<Home> {
                   myLocationEnabled: true,
                   trafficEnabled: false,
                 ),
-                if (_clicked)
+                if (clicked)
                   Positioned(
                     left: screenCoordinates.x.toDouble() / 5,
                     top: screenCoordinates.y.toDouble() / 3,
                     child: RaisedButton(
                       child: Text("Add Geofence"),
-                      onPressed: () {
-                        showModalBottomSheet(
+                      onPressed: () async {
+                        geofence.uniqueId = _fenceId.toString();
+                        geofence.radius = radius;
+                        geofence.latitude = selectedCoordinates.lat;
+                        geofence.longitude = selectedCoordinates.lng;
+                        _fenceId++;
+                        final clickValue = await showModalBottomSheet(
                           context: context,
                           isScrollControlled: true,
                           builder: (context) => SingleChildScrollView(
@@ -219,40 +297,50 @@ class _HomeState extends State<Home> {
                               padding: EdgeInsets.only(
                                   bottom:
                                       MediaQuery.of(context).viewInsets.bottom),
-                              child: AddGeofenceScreen(),
+                              child: AddGeofenceScreen(
+                                geofence: geofence,
+                                site: site,
+                              ),
                             ),
                           ),
                         );
+                        updateClicked(clickValue);
                       },
                     ),
                   ),
-                if (_clicked)
+                if (clicked)
                   Positioned(
                     bottom: 10,
                     right: 10,
                     left: 10,
                     child: Slider(
-                      min: 15,
-                      max: 70,
-                      value: _radius,
+                      min: 50,
+                      max: 200,
+                      value: radius,
                       onChanged: (newValue) {
                         setState(() {
-                          _radius = newValue;
+                          radius = newValue;
                           _drawCircle(geofence);
                         });
                       },
                     ),
                   ),
                 Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: <Widget>[
-                    if (_clicked)
-                      Container(
-                        padding: EdgeInsets.all(8.0),
-                        child: RaisedButton(
-                          onPressed: clearWindow,
-                          child: Text("Clear Window"),
-                        ),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(8, 8, 8, 8),
+                      child: RaisedButton(
+                          child: Text("Search Nearby Places"),
+                          onPressed: _showAlertDialog),
+                    ),
+                    Container(
+                      padding: EdgeInsets.fromLTRB(8, 0, 8, 8),
+                      child: RaisedButton(
+                        onPressed: clearWindow,
+                        child: Text("Clear Window"),
                       ),
+                    ),
                   ],
                 ),
               ],
