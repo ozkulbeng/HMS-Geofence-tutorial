@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geofence_example/global.dart';
 import 'package:huawei_location/geofence/geofence.dart';
+import 'package:huawei_location/geofence/geofence_request.dart';
 import 'package:huawei_location/geofence/geofence_service.dart';
 import 'package:huawei_site/model/site.dart';
 import 'package:huawei_site/search_service.dart';
@@ -30,10 +31,19 @@ class _AddGeofenceScreenState extends State<AddGeofenceScreen> {
     super.initState();
   }
 
-  void addGeofence(Geofence geofence) {
+  void addGeofence(Geofence geofence) async {
     geofence.dwellDelayTime = 10000;
     geofence.notificationInterval = 100;
     geofenceList.add(geofence);
+    GeofenceRequest geofenceRequest = GeofenceRequest(geofenceList:
+    geofenceList);
+    try {
+      int requestCode = await geofenceService.createGeofenceList
+        (geofenceRequest);
+      print(requestCode);
+    } catch (e) {
+      print(e.toString());
+    }
     print(geofenceList);
   }
 

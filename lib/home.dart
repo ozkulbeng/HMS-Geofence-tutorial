@@ -4,6 +4,8 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:geofence_example/add_geofence.dart';
 import 'package:huawei_location/geofence/geofence.dart';
+import 'package:huawei_location/geofence/geofence_data.dart';
+import 'package:huawei_location/geofence/geofence_service.dart';
 import 'package:huawei_location/location/fused_location_provider_client.dart';
 import 'package:huawei_location/location/location.dart';
 import 'package:huawei_location/permission/permission_handler.dart';
@@ -39,6 +41,8 @@ class _HomeState extends State<Home> with ChangeNotifier {
   Marker marker;
   Circle circle;
   Geofence geofence = Geofence();
+  GeofenceService geofenceService;
+  StreamSubscription<GeofenceData> geofenceStreamSub;
   Site site;
 
   Set<Marker> _markers = {};
@@ -57,6 +61,11 @@ class _HomeState extends State<Home> with ChangeNotifier {
     searchService = SearchService();
     permissionHandler = PermissionHandler();
     locationService = FusedLocationProviderClient();
+    geofenceService = GeofenceService();
+    geofenceStreamSub = geofenceService.onGeofenceData.listen((data) {
+      infoText = data.toString();
+      print(data.toString);
+    });
     getCurrentLatLng();
     super.initState();
   }
@@ -138,6 +147,17 @@ class _HomeState extends State<Home> with ChangeNotifier {
         print("Is permission granted $status");
       } catch (e) {
         print(e.toString());
+      }
+    }
+    bool backgroundPermission =
+        await permissionHandler.hasBackgroundLocationPermission();
+    if (!backgroundPermission) {
+      try {
+        bool backStatus =
+            await permissionHandler.requestBackgroundLocationPermission();
+        print("Is background permission granted $backStatus");
+      } catch (e) {
+        print(e.toString);
       }
     }
   }
@@ -228,11 +248,11 @@ class _HomeState extends State<Home> with ChangeNotifier {
     );
   }
 
-  void _showToast(BuildContext context) {
+  void _showToast(BuildContext context, String message) {
     final scaffold = Scaffold.of(context);
     scaffold.showSnackBar(
       SnackBar(
-        content: Text(infoText),
+        content: Text(message),
         action: SnackBarAction(
             label: 'Close', onPressed: scaffold.hideCurrentSnackBar),
       ),
@@ -241,6 +261,7 @@ class _HomeState extends State<Home> with ChangeNotifier {
 
   @override
   Widget build(BuildContext context) {
+    if (infoText != "") _showToast(context, infoText);
     print("build center: ${center.toString()}");
     return Scaffold(
       appBar: AppBar(
