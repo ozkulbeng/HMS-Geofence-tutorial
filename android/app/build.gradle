@@ -33,7 +33,7 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.geofence_example"
+        applicationId "<package_name>"
         minSdkVersion 19 //Increase to 19
         targetSdkVersion 28
         versionCode flutterVersionCode.toInteger()
@@ -42,10 +42,10 @@ android {
 
     signingConfigs {
         release {
-            storeFile = file('D:\\key.keystore')
-            storePassword = '261035'
-            keyAlias = 'key'
-            keyPassword = '261035'
+            storeFile file("<keystore_file>.jks/.keystore")
+            storePassword "<keystore_password>"
+            keyAlias "<key_alias>"
+            keyPassword "<key_password>"
         }
     }
     buildTypes {
